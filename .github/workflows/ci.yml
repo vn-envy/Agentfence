@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: bubblewrap (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q bubblewrap
+          # Ubuntu 24.04 limits unprivileged user namespaces, which bubblewrap needs.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
+      - name: Install
+        run: pip install -e ".[test]"
+
+      - name: Lint
+        run: ruff check .
+
+      # The real test: the box must hold on this runner (Seatbelt on macOS, bubblewrap on Linux).
+      - name: Prove the box
+        run: agentfence check
+
+      - name: Tests
+        run: pytest -v
+
+      - name: Example harness
+        working-directory: examples
+        run: python harness.py < /dev/null

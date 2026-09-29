@@ -1,0 +1,26 @@
+# agentfence.toml: the rules your agent runs under.
+# Keep this file out of the agent's reach, and review every change with
+#   agentfence diff OLD NEW
+
+[box]
+# The one folder code in the box may write. It gets no network, no keys and
+# no view of your home folder.
+workdir = "./agent-work"
+also_write = []
+also_read = []
+# Paths the startup check proves the box cannot read (missing ones are skipped).
+must_not_read = ["~/.ssh", "./.env"]
+timeout_seconds = 60
+
+[net]
+# Hosts the harness itself may call. A leading dot also allows subdomains.
+allow = ["api.anthropic.com"]
+
+[keys]
+# Each key goes only to the hosts listed here, and never into the box.
+ANTHROPIC_API_KEY = ["api.anthropic.com"]
+
+[approve]
+# Actions whose name contains one of these words wait for your yes.
+verbs = ["send", "pay", "delete", "remove", "post", "publish", "submit", "buy", "purchase", "book", "transfer"]
+ttl_minutes = 15

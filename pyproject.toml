@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentfence"
+version = "0.1.0"
+description = "Six small rules that keep a personal AI agent inside the lines: a proven sandbox for its code, keys it never sees, approvals for what matters, and a log."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+dependencies = []
+keywords = ["ai-agents", "sandbox", "security", "llm", "seatbelt", "bubblewrap"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+agentfence = "agentfence.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["agentfence*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
