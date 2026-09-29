@@ -35,7 +35,8 @@ def test_the_seatbelt_profile_is_an_allowlist_without_network(tmp_path):
 
 
 def test_seatbelt_paths_are_quoted():
-    assert '(subpath "/tmp/a \\"b\\"\\\\c")' in seatbelt_profile([], ['/tmp/a "b"\\c'])
+    # A path that does not exist, so no symlink (macOS: /tmp → /private/tmp) rewrites it.
+    assert '(subpath "/agentfence-test/a \\"b\\"\\\\c")' in seatbelt_profile([], ['/agentfence-test/a "b"\\c'])
 
 
 def test_bubblewrap_unshares_everything_and_mounts_no_home(tmp_path):

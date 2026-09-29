@@ -123,6 +123,7 @@ def seatbelt_profile(read_roots: Iterable[str], write_roots: Iterable[str]) -> s
         f"(allow file-read* file-map-executable {reads})",
         f"(allow file-read* file-write* {writes})",
         '(allow file-write-data (literal "/dev/null") (literal "/dev/zero") (literal "/dev/dtracehelper"))',
+        '(allow file-ioctl (literal "/dev/dtracehelper"))',
         f"(allow mach-lookup {mach})",
         "(allow ipc-posix-sem)",
         "(allow ipc-posix-shm)",
