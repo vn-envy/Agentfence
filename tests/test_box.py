@@ -25,9 +25,11 @@ def test_the_seatbelt_profile_is_an_allowlist_without_network(tmp_path):
     assert "(allow default)" not in profile
     write_rule = next(line for line in profile.splitlines() if "file-write*" in line)
     assert write_rule == f'(allow file-read* file-write* (subpath "{os.path.realpath(work)}"))'
-    read_rule = next(line for line in profile.splitlines() if line.startswith("(allow file-read* (subpath"))
+    read_rule = next(line for line in profile.splitlines() if line.startswith("(allow file-read* file-map-executable"))
     assert f'(subpath "{os.path.realpath(Path.home())}")' not in read_rule
     assert '(subpath "/System")' in read_rule
+    # Code may be loaded from system and interpreter folders, never from the box's own folder.
+    assert f'(subpath "{os.path.realpath(work)}")' not in read_rule
 
 
 def test_seatbelt_paths_are_quoted():
