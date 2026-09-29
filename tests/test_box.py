@@ -23,6 +23,8 @@ def test_the_seatbelt_profile_is_an_allowlist_without_network(tmp_path):
     assert profile.startswith("(version 1)\n(deny default)\n")
     assert "network" not in profile.replace(";; No network rule", "")
     assert "(allow default)" not in profile
+    assert '(allow file-read* (literal "/"))' in profile      # the root folder alone, never (subpath "/")
+    assert '(subpath "/")' not in profile
     write_rule = next(line for line in profile.splitlines() if "file-write*" in line)
     assert write_rule == f'(allow file-read* file-write* (subpath "{os.path.realpath(work)}"))'
     read_rule = next(line for line in profile.splitlines() if line.startswith("(allow file-read* file-map-executable"))

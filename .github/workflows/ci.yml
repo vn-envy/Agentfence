@@ -40,6 +40,13 @@ jobs:
       - name: Prove the box
         run: agentfence check
 
+      - name: Tests
+        run: pytest -v
+
+      - name: Example harness
+        working-directory: examples
+        run: python harness.py < /dev/null
+
       - name: Seatbelt diagnostics
         if: failure() && runner.os == 'macOS'
         run: |
@@ -53,11 +60,5 @@ jobs:
               r = subprocess.run([SANDBOX_EXEC, "-p", profile, *cmd], capture_output=True, text=True, cwd=work)
               print(cmd[0], "exit", r.returncode, "|", r.stdout.strip(), "|", r.stderr.strip()[:800])
           PY
-          sudo log show --last 5m --style compact --predicate 'eventMessage CONTAINS "Sandbox" AND eventMessage CONTAINS "deny"' | tail -80 || true
-
-      - name: Tests
-        run: pytest -v
-
-      - name: Example harness
-        working-directory: examples
-        run: python harness.py < /dev/null
+          # Only the processes the box started, not the rest of the system.
+          sudo log show --last 10m --style compact --predicate 'eventMessage CONTAINS "deny" AND (eventMessage CONTAINS "Sandbox: python" OR eventMessage CONTAINS "Sandbox: true(" OR eventMessage CONTAINS "Sandbox: echo(")' | tail -80 || true

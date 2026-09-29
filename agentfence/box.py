@@ -117,6 +117,8 @@ def seatbelt_profile(read_roots: Iterable[str], write_roots: Iterable[str]) -> s
         "(allow sysctl-read)",
         ";; Names and sizes along a path, never contents or listings.",
         "(allow file-read-metadata)",
+        ";; The root folder itself (only its top-level names): the loader reads it as every process starts.",
+        '(allow file-read* (literal "/"))',
         ";; System and interpreter files may be read and loaded as code (dyld maps libraries).",
         f"(allow file-read* file-map-executable {reads})",
         f"(allow file-read* file-write* {writes})",
