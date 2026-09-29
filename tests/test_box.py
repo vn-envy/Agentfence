@@ -111,6 +111,13 @@ def test_output_is_read_by_handle_not_by_a_name_in_the_box(tmp_path):
     assert result.stderr.strip() == "to stderr"
 
 
+def test_a_flood_of_output_is_capped_and_does_not_hang(tmp_path):
+    box = Box(tmp_path / "work", backend="none", output_cap=1000)
+    result = box.run_python("import sys\nsys.stdout.write('x' * 5_000_000)\nsys.stderr.write('y' * 5_000_000)")
+    assert result.ok
+    assert result.stdout == "x" * 1000 and result.stderr == "y" * 1000
+
+
 def test_links_left_behind_are_removed(tmp_path, secret):
     box = Box(tmp_path / "work", backend="none")
     code = (f"import os\nos.symlink({str(secret)!r}, 'leak.html')\nos.link({str(secret)!r}, 'hard.png')\n"

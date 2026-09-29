@@ -143,7 +143,7 @@ It exits 1 and names each widening, so you can run it in CI or a pre-commit hook
 | Network | None, including 127.0.0.1 | None: a new network namespace |
 | Home | `HOME` and `TMPDIR` point inside the box | Same; the real home is not mounted |
 
-The harness side matters as much as the box. Output is read through file handles the harness opened, never by a name the code could swap for a link. When a run ends, its whole process group is killed. Any symbolic or hard link the code left in a writable folder is removed before anything reads or serves that folder.
+The harness side matters as much as the box. Output is read through pipes the harness opened, never through a file the code could swap for a link. When a run ends, its whole process group is killed. Any symbolic or hard link the code left in a writable folder is removed before anything reads or serves that folder.
 
 ## What it does not do
 

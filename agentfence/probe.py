@@ -138,8 +138,11 @@ def run_probe(box: Box) -> Proof:
             result = box._spawn(box.wrap(command), timeout_s=60)
             checks = json.loads(result.stdout.strip().splitlines()[-1])
         except (IndexError, json.JSONDecodeError, OSError) as exc:
-            said = (result.stderr or result.stdout) if result else f"{type(exc).__name__}: {exc}"
-            return Proof(False, False, backend, f"The box could not start: {said.strip()[:400] or 'no output'}")
+            if result is None:
+                said = f"{type(exc).__name__}: {exc}"
+            else:
+                said = (result.stderr or result.stdout).strip()[:400] or f"no output, exit code {result.returncode}"
+            return Proof(False, False, backend, f"The box could not start: {said}")
         # The harness's own view: a write outside counts only if it landed on this machine.
         checks["write_outside"] = "allowed" if outside.exists() else "denied"
         # A box may show empty mount points for its own folders; only real names are a leak.

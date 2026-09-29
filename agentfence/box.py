@@ -12,8 +12,8 @@ its packages, and the box's folders. Writes: the box's folders. Network:
 none, not even 127.0.0.1, which many local tools trust.
 
 A box also protects the harness from what the code leaves behind. Output is
-read through file handles the harness opened, never by a name the code could
-swap for a link. When a run ends, its process group is killed and any symbolic
+read through pipes the harness opened, never by a name the code could swap
+for a link. When a run ends, its process group is killed and any symbolic
 or hard link left in a writable folder is removed before anything serves it.
 """
 from __future__ import annotations
@@ -24,7 +24,6 @@ import signal
 import subprocess
 import sys
 import sysconfig
-import tempfile
 import threading
 import time
 import uuid
@@ -189,9 +188,32 @@ def _kill_group(pgid: int) -> None:
             pass
 
 
-def _read(handle, cap: int) -> str:
-    handle.seek(0)
-    return handle.read(cap).decode("utf-8", errors="replace")
+class _Drain(threading.Thread):
+    """Read a pipe to the end, keeping the first `cap` bytes and dropping the rest.
+
+    A pipe, not a file: Seatbelt can refuse writes to a spool file outside the
+    box even through a descriptor the harness handed in. A pipe has no path at
+    all, so the code can neither write to it by name nor swap it for a link."""
+
+    def __init__(self, pipe, cap: int) -> None:
+        super().__init__(daemon=True)
+        self.pipe, self.cap, self.data = pipe, cap, bytearray()
+
+    def run(self) -> None:
+        try:
+            while chunk := self.pipe.read(65536):
+                if len(self.data) < self.cap:
+                    self.data += chunk[: self.cap - len(self.data)]
+        except (OSError, ValueError):
+            pass
+
+    def text(self) -> str:
+        self.join(timeout=2)
+        try:
+            self.pipe.close()
+        except OSError:
+            pass
+        return bytes(self.data).decode("utf-8", errors="replace")
 
 
 # ── The box ───────────────────────────────────────────────────────────────────
@@ -304,24 +326,26 @@ class Box:
         proc: subprocess.Popen | None = None
         timed_out = False
         returncode: int | None = None
-        # Unnamed spools outside every folder the code can write (see the module docstring).
-        with tempfile.TemporaryFile() as out_f, tempfile.TemporaryFile() as err_f:
+        drains: list[_Drain] = []
+        try:
+            proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    cwd=str(self.workdir), env=env, start_new_session=True)
+            drains = [_Drain(proc.stdout, self.output_cap), _Drain(proc.stderr, self.output_cap)]
+            for drain in drains:
+                drain.start()
             try:
-                proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=out_f, stderr=err_f,
-                                        cwd=str(self.workdir), env=env, start_new_session=True)
-                try:
-                    returncode = proc.wait(timeout=timeout_s)
-                except subprocess.TimeoutExpired:
-                    timed_out = True
-            finally:
-                if proc is not None:
-                    # Nothing the code started outlives the run.
-                    _kill_group(proc.pid)
-                    if proc.poll() is None:
-                        proc.kill()
-                    proc.wait()
-                removed = [link for root in self.write_roots for link in drop_links(root)]
-            stdout, stderr = _read(out_f, self.output_cap), _read(err_f, self.output_cap)
+                returncode = proc.wait(timeout=timeout_s)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+        finally:
+            if proc is not None:
+                # Nothing the code started outlives the run (it would also hold the pipes open).
+                _kill_group(proc.pid)
+                if proc.poll() is None:
+                    proc.kill()
+                proc.wait()
+            removed = [link for root in self.write_roots for link in drop_links(root)]
+        stdout, stderr = (drain.text() for drain in drains) if drains else ("", "")
         return RunResult(returncode=None if timed_out else returncode, stdout=stdout, stderr=stderr,
                          timed_out=timed_out, duration_s=round(time.monotonic() - started, 3),
                          backend=self.backend, removed_links=removed)
