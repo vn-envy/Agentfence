@@ -195,9 +195,9 @@ def _kill_group(pgid: int) -> None:
 class _Drain(threading.Thread):
     """Read a pipe to the end, keeping the first `cap` bytes and dropping the rest.
 
-    A pipe, not a file: Seatbelt can refuse writes to a spool file outside the
-    box even through a descriptor the harness handed in. A pipe has no path at
-    all, so the code can neither write to it by name nor swap it for a link."""
+    A pipe, not a spool file: a pipe has no path, so the code can neither write
+    to it by name nor swap it for a link, and it doesn't rely on the sandbox
+    letting the box write to a file outside it through an inherited descriptor."""
 
     def __init__(self, pipe, cap: int) -> None:
         super().__init__(daemon=True)

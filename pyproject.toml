@@ -21,6 +21,12 @@ classifiers = [
     "Topic :: Security",
 ]
 
+[project.urls]
+Homepage = "https://github.com/vn-envy/agentfence"
+Documentation = "https://github.com/vn-envy/agentfence/blob/main/docs/ARCHITECTURE.md"
+Changelog = "https://github.com/vn-envy/agentfence/blob/main/CHANGELOG.md"
+Issues = "https://github.com/vn-envy/agentfence/issues"
+
 [project.optional-dependencies]
 test = ["pytest>=8", "ruff>=0.6"]
 
